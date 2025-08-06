@@ -1,4 +1,4 @@
-import { RepositoryData, Analytics } from '../types/index.js';
+import { RepositoryData, Analytics } from '../types/index';
 import { format, startOfWeek, startOfMonth, differenceInHours } from 'date-fns';
 
 export function analyzeData(data: RepositoryData): Analytics {

@@ -1,9 +1,9 @@
 import { Octokit } from '@octokit/rest';
-import { RepositoryData, CollectOptions } from '../types/index.js';
-import { collectCommits } from './commits.js';
-import { collectPullRequests } from './pull-requests.js';
-import { collectIssues } from './issues.js';
-import { analyzeData } from '../utils/analytics.js';
+import { RepositoryData, CollectOptions } from '../types/index';
+import { collectCommits } from './commits';
+import { collectPullRequests } from './pull-requests';
+import { collectIssues } from './issues';
+import { analyzeData } from '../utils/analytics';
 
 export async function collectData(repo: string, options: CollectOptions): Promise<RepositoryData> {
   const [owner, repoName] = repo.split('/');

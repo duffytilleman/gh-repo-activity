@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { Commit } from '../types/index.js';
+import { Commit } from '../types/index';
 
 export async function collectCommits(
   octokit: Octokit,

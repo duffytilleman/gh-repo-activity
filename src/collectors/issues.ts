@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { Issue } from '../types/index.js';
+import { Issue } from '../types/index';
 
 export async function collectIssues(
   octokit: Octokit,

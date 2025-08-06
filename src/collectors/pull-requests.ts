@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { PullRequest } from '../types/index.js';
+import { PullRequest } from '../types/index';
 
 export async function collectPullRequests(
   octokit: Octokit,
@@ -50,7 +50,7 @@ export async function collectPullRequests(
             closed_at: pr.closed_at,
             state: pr.merged_at ? 'merged' : 'closed',
             reviews_count: 0, // Will be populated separately if needed
-            comments_count: pr.comments,
+            comments_count: 0, // pr.comments field not available in list API
           });
         }
       }
@@ -95,7 +95,7 @@ export async function collectPullRequests(
             closed_at: null,
             state: 'open',
             reviews_count: 0,
-            comments_count: pr.comments,
+            comments_count: 0, // pr.comments field not available in list API
           });
         }
       }

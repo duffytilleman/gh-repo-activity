@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { collectData } from './collectors/index.js';
-import { generateReport } from './generators/index.js';
-import { CollectOptions, GenerateOptions } from './types/index.js';
+import { collectData } from './collectors/index';
+import { generateReport } from './generators/index';
+import { CollectOptions, GenerateOptions } from './types/index';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -24,7 +24,7 @@ program
   .option('--token <token>', 'GitHub personal access token')
   .option('--verbose', 'Show detailed progress information', false)
   .option('--include <types>', 'Comma-separated list: commits,prs,issues', 'commits,prs,issues')
-  .action(async (repo: string, options: CollectOptions) => {
+  .action(async (repo: string, options: any) => {
     try {
       console.log(`🔍 Collecting data for ${repo}...`);
       
@@ -37,7 +37,7 @@ program
       const data = await collectData(repo, {
         ...options,
         token,
-        include: options.include ? options.include.split(',') : ['commits', 'prs', 'issues']
+        include: typeof options.include === 'string' ? options.include.split(',') : ['commits', 'prs', 'issues']
       });
 
       const outputPath = path.resolve(options.output || './repo-data.json');
@@ -59,7 +59,7 @@ program
   .option('--theme <name>', 'Color theme (light, dark)', 'light')
   .option('--output <file>', 'HTML output file path', './dashboard.html')
   .option('--title <text>', 'Custom dashboard title')
-  .action(async (dataFile: string, options: GenerateOptions) => {
+  .action(async (dataFile: string, options: any) => {
     try {
       console.log(`📊 Generating dashboard from ${dataFile}...`);
 
@@ -91,6 +91,7 @@ program
   .option('--template <name>', 'Template name', 'standard')
   .option('--theme <name>', 'Color theme', 'light')
   .option('--token <token>', 'GitHub personal access token')
+  .option('--include <types>', 'Comma-separated list: commits,prs,issues', 'commits,prs,issues')
   .option('--keep-json', 'Preserve intermediate JSON file', false)
   .option('--verbose', 'Show detailed progress information', false)
   .action(async (repo: string, options: any) => {
@@ -110,7 +111,7 @@ program
         until: options.until,
         token,
         verbose: options.verbose,
-        include: ['commits', 'prs', 'issues']
+        include: typeof options.include === 'string' ? options.include.split(',') : ['commits', 'prs', 'issues']
       });
 
       // Generate report
