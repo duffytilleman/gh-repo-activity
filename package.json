@@ -1,0 +1,37 @@
+{
+  "name": "repo-activity",
+  "version": "0.1.0",
+  "description": "GitHub repository activity analyzer and dashboard generator",
+  "main": "dist/index.js",
+  "bin": {
+    "repo-activity": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["github", "repository", "analytics", "visualization", "cli"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^20.0.0",
+    "commander": "^11.0.0",
+    "date-fns": "^2.30.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
