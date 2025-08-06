@@ -5,6 +5,7 @@ export function analyzeData(data: RepositoryData): Analytics {
   return {
     commit_frequency: analyzeCommitFrequency(data.commits),
     pr_metrics: analyzePullRequestMetrics(data.pull_requests),
+    pr_breakdown: analyzePullRequestBreakdown(data.pull_requests),
     issue_metrics: analyzeIssueMetrics(data.issues),
     contributor_patterns: analyzeContributorPatterns(data.commits, data.pull_requests, data.issues),
   };
@@ -65,6 +66,103 @@ function analyzePullRequestMetrics(pullRequests: any[]) {
     closed,
     open,
     average_merge_time_hours,
+  };
+}
+
+function analyzePullRequestBreakdown(pullRequests: any[]) {
+  // Analyze by user
+  const userStats = new Map<string, { created: number; merged: number; reviewed: number }>();
+  
+  pullRequests.forEach(pr => {
+    const author = pr.author;
+    if (!userStats.has(author)) {
+      userStats.set(author, { created: 0, merged: 0, reviewed: 0 });
+    }
+    userStats.get(author)!.created++;
+    
+    if (pr.state === 'merged') {
+      userStats.get(author)!.merged++;
+    }
+
+    // Count reviews by each user
+    pr.reviews.forEach((review: any) => {
+      const reviewer = review.reviewer;
+      if (!userStats.has(reviewer)) {
+        userStats.set(reviewer, { created: 0, merged: 0, reviewed: 0 });
+      }
+      userStats.get(reviewer)!.reviewed++;
+    });
+  });
+
+  const by_user = Array.from(userStats.entries()).map(([user, stats]) => ({
+    user,
+    ...stats,
+  }));
+
+  // Analyze by week
+  const weeklyStats = new Map<string, { created: number; merged: number; reviewed: number }>();
+  const weeklyVelocity = new Map<string, { opened: number; closed: number }>();
+
+  pullRequests.forEach(pr => {
+    const createdWeek = format(startOfWeek(new Date(pr.created_at)), 'yyyy-MM-dd');
+    
+    if (!weeklyStats.has(createdWeek)) {
+      weeklyStats.set(createdWeek, { created: 0, merged: 0, reviewed: 0 });
+    }
+    weeklyStats.get(createdWeek)!.created++;
+
+    if (!weeklyVelocity.has(createdWeek)) {
+      weeklyVelocity.set(createdWeek, { opened: 0, closed: 0 });
+    }
+    weeklyVelocity.get(createdWeek)!.opened++;
+
+    if (pr.merged_at) {
+      const mergedWeek = format(startOfWeek(new Date(pr.merged_at)), 'yyyy-MM-dd');
+      if (!weeklyStats.has(mergedWeek)) {
+        weeklyStats.set(mergedWeek, { created: 0, merged: 0, reviewed: 0 });
+      }
+      weeklyStats.get(mergedWeek)!.merged++;
+
+      if (!weeklyVelocity.has(mergedWeek)) {
+        weeklyVelocity.set(mergedWeek, { opened: 0, closed: 0 });
+      }
+      weeklyVelocity.get(mergedWeek)!.closed++;
+    }
+
+    if (pr.closed_at && !pr.merged_at) {
+      const closedWeek = format(startOfWeek(new Date(pr.closed_at)), 'yyyy-MM-dd');
+      if (!weeklyVelocity.has(closedWeek)) {
+        weeklyVelocity.set(closedWeek, { opened: 0, closed: 0 });
+      }
+      weeklyVelocity.get(closedWeek)!.closed++;
+    }
+
+    // Count reviews by week
+    pr.reviews.forEach((review: any) => {
+      const reviewWeek = format(startOfWeek(new Date(review.submitted_at)), 'yyyy-MM-dd');
+      if (!weeklyStats.has(reviewWeek)) {
+        weeklyStats.set(reviewWeek, { created: 0, merged: 0, reviewed: 0 });
+      }
+      weeklyStats.get(reviewWeek)!.reviewed++;
+    });
+  });
+
+  const by_week = Array.from(weeklyStats.entries())
+    .map(([week, stats]) => ({ week, ...stats }))
+    .sort((a, b) => a.week.localeCompare(b.week));
+
+  const weekly_velocity = Array.from(weeklyVelocity.entries())
+    .map(([week, stats]) => ({
+      week,
+      ...stats,
+      net_change: stats.opened - stats.closed,
+    }))
+    .sort((a, b) => a.week.localeCompare(b.week));
+
+  return {
+    by_user: by_user.sort((a, b) => (b.created + b.merged + b.reviewed) - (a.created + a.merged + a.reviewed)),
+    by_week,
+    weekly_velocity,
   };
 }
 

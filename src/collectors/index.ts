@@ -64,6 +64,7 @@ export async function collectData(repo: string, options: CollectOptions): Promis
       analytics: {
         commit_frequency: { daily: [], weekly: [], monthly: [] },
         pr_metrics: { total: 0, merged: 0, closed: 0, open: 0, average_merge_time_hours: null },
+        pr_breakdown: { by_user: [], by_week: [], weekly_velocity: [] },
         issue_metrics: { total: 0, open: 0, closed: 0, average_close_time_hours: null },
         contributor_patterns: { top_contributors: [], new_contributors: [], active_contributors: [] },
       },

@@ -83,6 +83,32 @@ export function generateHTML(data: RepositoryData, options: GenerateOptions & { 
             </div>
         </div>
 
+        <div class="pr-breakdown-section">
+            <h2>Pull Request Breakdown</h2>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>PR Activity by User</h3>
+                    <canvas id="prUserChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Weekly PR Activity</h3>
+                    <canvas id="prWeeklyChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>PR Velocity (Weekly)</h3>
+                    <canvas id="prVelocityChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Review Activity by User</h3>
+                    <canvas id="reviewUserChart"></canvas>
+                </div>
+            </div>
+        </div>
+
         <div class="data-tables">
             <div class="table-container">
                 <h3>Recent Activity</h3>
@@ -236,6 +262,19 @@ function getCSS(theme: string): string {
 
         .chart-container canvas {
             max-height: 300px;
+        }
+
+        .pr-breakdown-section {
+            margin-bottom: 40px;
+        }
+
+        .pr-breakdown-section h2 {
+            font-size: 2em;
+            margin-bottom: 30px;
+            text-align: center;
+            color: ${isDark ? '#f0f6fc' : '#24292f'};
+            border-bottom: 2px solid ${isDark ? '#21262d' : '#e1e4e8'};
+            padding-bottom: 15px;
         }
 
         .data-tables {
@@ -470,6 +509,163 @@ function generateChartScript(data: RepositoryData): string {
                     responsive: true,
                     plugins: {
                         legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // PR Activity by User Chart
+        const prUserCtx = document.getElementById('prUserChart');
+        if (prUserCtx) {
+            const prUserData = ${JSON.stringify(data.analytics.pr_breakdown.by_user.slice(0, 10))};
+            new Chart(prUserCtx, {
+                type: 'bar',
+                data: {
+                    labels: prUserData.map(u => u.user),
+                    datasets: [
+                        {
+                            label: 'Created',
+                            data: prUserData.map(u => u.created),
+                            backgroundColor: '#58a6ff',
+                        },
+                        {
+                            label: 'Merged',
+                            data: prUserData.map(u => u.merged),
+                            backgroundColor: '#28a745',
+                        },
+                        {
+                            label: 'Reviewed',
+                            data: prUserData.map(u => u.reviewed),
+                            backgroundColor: '#fd7e14',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Weekly PR Activity Chart
+        const prWeeklyCtx = document.getElementById('prWeeklyChart');
+        if (prWeeklyCtx) {
+            const weeklyData = ${JSON.stringify(data.analytics.pr_breakdown.by_week)};
+            new Chart(prWeeklyCtx, {
+                type: 'line',
+                data: {
+                    labels: weeklyData.map(w => new Date(w.week).toLocaleDateString()),
+                    datasets: [
+                        {
+                            label: 'Created',
+                            data: weeklyData.map(w => w.created),
+                            borderColor: '#58a6ff',
+                            backgroundColor: 'rgba(88, 166, 255, 0.1)',
+                            fill: false,
+                        },
+                        {
+                            label: 'Merged',
+                            data: weeklyData.map(w => w.merged),
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            fill: false,
+                        },
+                        {
+                            label: 'Reviewed',
+                            data: weeklyData.map(w => w.reviewed),
+                            borderColor: '#fd7e14',
+                            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                            fill: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // PR Velocity Chart
+        const prVelocityCtx = document.getElementById('prVelocityChart');
+        if (prVelocityCtx) {
+            const velocityData = ${JSON.stringify(data.analytics.pr_breakdown.weekly_velocity)};
+            new Chart(prVelocityCtx, {
+                type: 'bar',
+                data: {
+                    labels: velocityData.map(v => new Date(v.week).toLocaleDateString()),
+                    datasets: [
+                        {
+                            label: 'Opened',
+                            data: velocityData.map(v => v.opened),
+                            backgroundColor: '#58a6ff',
+                        },
+                        {
+                            label: 'Closed',
+                            data: velocityData.map(v => -v.closed), // Negative for visual effect
+                            backgroundColor: '#28a745',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return Math.abs(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + Math.abs(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Review Activity by User Chart
+        const reviewUserCtx = document.getElementById('reviewUserChart');
+        if (reviewUserCtx) {
+            const reviewData = ${JSON.stringify(data.analytics.pr_breakdown.by_user.filter(u => u.reviewed > 0).slice(0, 10))};
+            new Chart(reviewUserCtx, {
+                type: 'bar',
+                data: {
+                    labels: reviewData.map(u => u.user),
+                    datasets: [{
+                        label: 'Reviews',
+                        data: reviewData.map(u => u.reviewed),
+                        backgroundColor: '#fd7e14',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { display: false }
                     }
                 }
             });

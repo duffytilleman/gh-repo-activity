@@ -41,17 +41,19 @@ export async function collectPullRequests(
 
         // Only include PRs created or updated in our time range
         if (createdDate >= since && createdDate <= until) {
-          pullRequests.push({
+          const pullRequest = {
             number: pr.number,
             title: pr.title,
             author: pr.user?.login || 'unknown',
             created_at: pr.created_at,
             merged_at: pr.merged_at,
             closed_at: pr.closed_at,
-            state: pr.merged_at ? 'merged' : 'closed',
-            reviews_count: 0, // Will be populated separately if needed
-            comments_count: 0, // pr.comments field not available in list API
-          });
+            state: (pr.merged_at ? 'merged' : 'closed') as 'open' | 'closed' | 'merged',
+            reviews: [] as Array<{ reviewer: string; state: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED'; submitted_at: string }>,
+            comments_count: 0,
+          };
+          
+          pullRequests.push(pullRequest);
         }
       }
 
@@ -93,9 +95,9 @@ export async function collectPullRequests(
             created_at: pr.created_at,
             merged_at: null,
             closed_at: null,
-            state: 'open',
-            reviews_count: 0,
-            comments_count: 0, // pr.comments field not available in list API
+            state: 'open' as 'open' | 'closed' | 'merged',
+            reviews: [] as Array<{ reviewer: string; state: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED'; submitted_at: string }>,
+            comments_count: 0,
           });
         }
       }
@@ -104,6 +106,40 @@ export async function collectPullRequests(
       page++;
 
       await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Fetch review data for PRs within time range (limited to avoid excessive API calls)
+    const prsForReviews = pullRequests.filter(pr => {
+      const prDate = new Date(pr.created_at);
+      return prDate >= since && prDate <= until;
+    });
+    
+    if (verbose) {
+      console.log(`  🔍 Fetching review data for ${prsForReviews.length} PRs in time range...`);
+    }
+    
+    for (const pr of prsForReviews) {
+      try {
+        const { data: reviews } = await octokit.rest.pulls.listReviews({
+          owner,
+          repo,
+          pull_number: pr.number,
+        });
+
+        pr.reviews = reviews
+          .filter(review => review.state !== 'DISMISSED' && review.user)
+          .map(review => ({
+            reviewer: review.user?.login || 'unknown',
+            state: review.state as 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED',
+            submitted_at: review.submitted_at || new Date().toISOString(),
+          }));
+
+        await new Promise(resolve => setTimeout(resolve, 50)); // Rate limiting
+      } catch (error) {
+        if (verbose) {
+          console.log(`    ⚠️  Could not fetch reviews for PR #${pr.number}`);
+        }
+      }
     }
 
     if (verbose) {

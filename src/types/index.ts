@@ -41,7 +41,11 @@ export interface PullRequest {
   merged_at: string | null;
   closed_at: string | null;
   state: 'open' | 'closed' | 'merged';
-  reviews_count: number;
+  reviews: Array<{
+    reviewer: string;
+    state: 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED';
+    submitted_at: string;
+  }>;
   comments_count: number;
 }
 
@@ -78,6 +82,26 @@ export interface Analytics {
     closed: number;
     open: number;
     average_merge_time_hours: number | null;
+  };
+  pr_breakdown: {
+    by_user: Array<{
+      user: string;
+      created: number;
+      merged: number;
+      reviewed: number;
+    }>;
+    by_week: Array<{
+      week: string;
+      created: number;
+      merged: number;
+      reviewed: number;
+    }>;
+    weekly_velocity: Array<{
+      week: string;
+      opened: number;
+      closed: number;
+      net_change: number;
+    }>;
   };
   issue_metrics: {
     total: number;
